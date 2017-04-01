@@ -349,6 +349,6 @@ MODULE_DESC = {
     .start_acquire_data = nw_routing_babel_start_acquire_data
   },
   .schedule = {
-    .refresh_interval = 3
+    .refresh_interval = 60
   }
 };
