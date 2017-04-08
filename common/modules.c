@@ -158,6 +158,8 @@ int nw_module_init(const lu_args *args) {
     ret |= nw_module_load_library(path, args);
   }
   closedir(dir);
+  if (moddir)
+    free(moddir);
 
   return ret;
 }
