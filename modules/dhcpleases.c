@@ -26,7 +26,7 @@ static int nw_dhcpleases_start_acquire_data(nodewatcher_module_t *module) {
       unsigned int expiry;
       char mac[18];
       char ip_address[46];
-      char hostname[64];
+      char hostname[65];
 
       if (fscanf(leases_file, "%u %17s %45s %64s %*[^\n]\n", &expiry, mac, ip_address, hostname) >= 3) {
 
