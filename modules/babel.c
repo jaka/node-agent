@@ -48,7 +48,6 @@ enum babel_info_type {
 #define INFO_ROUTE_NAME "route"
 
 struct nw_babel_client_s {
-  int fd;
   lu_fdn_t *fdn;
   lu_stream_t *stream;
   json_object *object;
@@ -76,14 +75,15 @@ static json_object *nw_routing_babel_add_array_item(json_object *object, const c
 
 static void nw_routing_babel_close(struct nw_babel_client_s *bc) {
 
+  int fd = bc->fdn->fd;
+
   lu_fd_del(bc->fdn);
   lu_task_remove((void *)bc);
 
   lu_stream_destroy(bc->stream);
   bc->stream = NULL;
 
-  close(bc->fd);
-  bc->fd = -1;
+  close(fd);
 
   nw_module_finish_acquire_data(bc->module, bc->object);
 
@@ -103,7 +103,7 @@ static void nw_routing_babel_recv(void *arg) {
   if (bc->stream == NULL)
     return;
 
-  lu_stream_readin_fd(bc->stream, bc->fd);
+  lu_stream_readin_fd(bc->stream, bc->fdn->fd);
 
   for(;;) {
 
@@ -251,11 +251,10 @@ static void nw_routing_babel_timeout(void *arg) {
 
 static int nw_routing_babel_start_acquire_data(nodewatcher_module_t *module) {
 
-  int fd;
   struct ifaddrs *ifaddr, *ifa;
   struct sockaddr_in6 babel_addr;
 
-  if (bc.fd > 0)
+  if (bc.object)
     return -1;
 
   bc.object = json_object_new_object();
@@ -298,43 +297,41 @@ static int nw_routing_babel_start_acquire_data(nodewatcher_module_t *module) {
     syslog(LOG_WARNING, "%s: Failed to obtain link-local addresses.", module->name);
   }
 
-  fd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
-  if (fd) {
+  lu_fdn_t fdn;
 
-    memset((char *)&babel_addr, 0, sizeof(babel_addr));
-    babel_addr.sin6_family = AF_INET6;
-    babel_addr.sin6_port = htons(33123);
-    inet_pton(AF_INET6, "::1", babel_addr.sin6_addr.s6_addr);
-
-    if (connect(fd, (struct sockaddr *)&babel_addr, sizeof(babel_addr)) < 0) {
-      syslog(LOG_WARNING, "%s: Could not connect to babeld.", module->name);
-    }
-    else {
-
-
-      bc.fd = fd;
-      bc.stream = lu_stream_create(2048);
-
-      lu_fdn_t fdn;
-      fdn.fd = fd;
-      fdn.recv = nw_routing_babel_recv;
-      fdn.options = LS_READ;
-      fdn.data = &bc;
-
-      bc.fdn = lu_fd_add(&fdn);
-
-      lu_task_insert(5, nw_routing_babel_timeout, (void *)&bc);
-    }
-
+  fdn.fd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+  if (fdn.fd < 0) {
+    syslog(LOG_WARNING, "%s: Could not create socket.", module->name);
+    return nw_module_finish_acquire_data(module, bc.object);
   }
+
+  memset((char *)&babel_addr, 0, sizeof(babel_addr));
+  babel_addr.sin6_family = AF_INET6;
+  babel_addr.sin6_port = htons(33123);
+  inet_pton(AF_INET6, "::1", babel_addr.sin6_addr.s6_addr);
+
+  if (connect(fdn.fd, (struct sockaddr *)&babel_addr, sizeof(babel_addr)) < 0) {
+    syslog(LOG_WARNING, "%s: Could not connect to local Babel instance.", module->name);
+    return nw_module_finish_acquire_data(module, bc.object);
+  }
+
+  bc.stream = lu_stream_create(2048);
+
+  fdn.recv = nw_routing_babel_recv;
+  fdn.options = LS_READ;
+  fdn.data = &bc;
+
+  bc.fdn = lu_fd_add(&fdn);
+
+  lu_task_insert(5, nw_routing_babel_timeout, (void *)&bc);
 
   return 0;
 }
 
 static int nw_routing_babel_init(nodewatcher_module_t *module) {
 
-  bc.fd = -1;
   bc.module = module;
+  bc.object = NULL;
 
   return 0;
 }
