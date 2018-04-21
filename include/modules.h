@@ -1,14 +1,14 @@
 #ifndef NODEWATCHER_MODULES_H
 #define NODEWATCHER_MODULES_H
 
-#include <libre/config.h>
-
-#include <json-c/json.h>
-#include <syslog.h>
 #include <dlfcn.h>
+#include <json-c/json.h>
+#include <libre/config.h>
+#include <syslog.h>
+#include <time.h>
 
 #define UNUSED(x) (void)(x)
-#define MODULE_DESC nodewatcher_module_t nw_module __attribute__ ((visibility("default")))
+#define MODULE_DESC nodewatcher_module_t nw_module __attribute__((visibility("default")))
 
 enum {
   NW_MODULE_NONE = 0,

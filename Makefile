@@ -11,7 +11,7 @@ COMMON_SOURCES	:= $(wildcard common/*.c)
 COMMON_OBJECTS	:= $(patsubst %.c,%.o,$(COMMON_SOURCES))
 MODULES_OBJECTS	:= $(patsubst %.c,%.o,$(wildcard modules/*.c))
 
-LIBS	:= babel.so dhcpleases.so dummy.so fileoutput.so resources.so system.so
+LIBS	:= babel.so dhcpleases.so dummy.so fileoutput.so resources.so sensors.so system.so
 TARGETS := node-agent
 
 all: $(COMMON_OBJECTS) $(LIBS) $(TARGETS)
