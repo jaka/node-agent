@@ -18,6 +18,7 @@
  */
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <ifaddrs.h>
 #include <libre/scheduler.h>
 #include <libre/stream.h>
@@ -123,6 +124,8 @@ static void nw_routing_babel_recv(void *arg) {
 
     /* Tokenize by spaces. */
     type = strtok(line, " ");
+    if (!type)
+      break;
 
     if (!strcmp(type, "BABEL")) {
       /* Header. */
@@ -314,6 +317,9 @@ static int nw_routing_babel_start_acquire_data(nodewatcher_module_t *module) {
     syslog(LOG_WARNING, "%s: Could not connect to local Babel instance.", module->name);
     return nw_module_finish_acquire_data(module, bc.object);
   }
+
+  int flags = fcntl(fdn.fd, F_GETFL, 0);
+  fcntl(fdn.fd, F_SETFL, flags | O_NONBLOCK);
 
   bc.stream = lu_stream_create(2048);
 

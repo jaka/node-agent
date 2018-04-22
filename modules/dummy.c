@@ -34,6 +34,6 @@ MODULE_DESC = {
     .start_acquire_data = nw_dummy_start_acquire_data,
   },
   .schedule = {
-    .refresh_interval = 120,
+    .refresh_interval = 30,
   },
 };

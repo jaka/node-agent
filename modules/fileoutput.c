@@ -67,6 +67,6 @@ MODULE_DESC = {
     .start_acquire_data = nw_fileoutput_start_acquire_data,
   },
   .schedule = {
-    .refresh_interval = 60,
+    .refresh_interval = 30,
   },
 };
