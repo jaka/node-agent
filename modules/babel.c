@@ -53,6 +53,7 @@ struct nw_babel_client_s {
   lu_stream_t *stream;
   json_object *object;
   nodewatcher_module_t *module;
+  int state;
 };
 
 static struct nw_babel_client_s bc;
@@ -129,6 +130,17 @@ static void nw_routing_babel_recv(void *arg) {
 
     if (!strcmp(type, "BABEL")) {
       /* Header. */
+      bc->state = 2;
+    }
+    else if (!strcmp(type, "ok")) {
+      if (bc->state == 2) {
+        write(bc->fdn->fd, "dump\n", 5);
+      }
+      else if (bc->state == 1) {
+        write(bc->fdn->fd, "quit\n", 5);
+        return nw_routing_babel_close(bc);
+      }
+      bc->state--;
     }
     else if (!strcmp(type, "add")) {
       /* Information. */
